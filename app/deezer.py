@@ -41,6 +41,41 @@ httpHeaders = {
         }
 session.headers.update(httpHeaders)
 
+itemLut = {
+    '1': {
+        'selector': 'TRACK',
+        'string': '{0}) {1} - {2} / {3} {4}',
+        'tuple': lambda i, item : (str(i+1), item['SNG_TITLE'],
+                                   item['ART_NAME'], item['ALB_TITLE'],
+                                   '[explicit]' if item['EXPLICIT_TRACK_CONTENT']['EXPLICIT_LYRICS_STATUS'] == 1 else ''),
+        'type': 'song',
+        'url': lambda item : f'https://www.deezer.com/track/{item["SNG_ID"]}'
+    },
+    '2': {
+        'selector': 'ALBUM',
+        'string': '{0}) {1} - {2} {3}',
+        'tuple': lambda i, item : (str(i+1), item['ALB_TITLE'],
+                                   item['ART_NAME'],
+                                   '[explicit]' if item['EXPLICIT_ALBUM_CONTENT']['EXPLICIT_LYRICS_STATUS'] == 1 else ''),
+        'type': 'album',
+        'url': lambda item : f'https://www.deezer.com/album/{item["ALB_ID"]}'
+    },
+    '3': {
+        'selector': 'ARTIST',
+        'string': '{0}) {1}',
+        'tuple': lambda i, item : (str(i+1), item['ART_NAME']),
+        'type': 'artist',
+        'url': lambda item : f'https://www.deezer.com/artist/{item["ART_ID"]}'
+    },
+    '4': {
+        'selector': 'PLAYLIST',
+        'string': '{0}) {1} / {2} songs',
+        'tuple': lambda i, item : (str(i+1), item['TITLE'], item['NB_SONG']),
+        'type': 'playlist',
+        'url': lambda item : f'https://www.deezer.com/playlist/{item["PLAYLIST_ID"]}'
+    }
+}
+
 def apiCall(method, json_req=False):
     ''' Requests info from the hidden api: gw-light.php.
     '''
@@ -446,6 +481,49 @@ def get_song_infos_from_deezer_website(search_type, id):
     return songs[0] if search_type == TYPE_TRACK else songs
 
 
+
+def findDeezerReleases(searchTerm, itemType='2', maxResults = 1000):
+    items = []
+    if itemType == TYPE_ALBUM_TRACK:
+        albumInfo = getJSON('album', searchTerm)
+        #print('findDeezerReleases: albumInfo+ ' + str(albumInfo))
+        for trackInfo in albumInfo['tracks']['data'] :
+            trackInfo['album'] = albumInfo['title']
+            trackInfo['album_id'] = albumInfo['id']
+            trackInfo['coverArtUrl'] = albumInfo['cover_small']
+            print('findDeezerReleases: item:' + str(trackInfo))
+            items.append(trackInfo)
+    else:
+        itemType = '1' if itemType == 'track' else '2'
+        res = apiCall('deezer.suggest', {'NB': maxResults, 'QUERY': searchTerm, 'TYPES': {
+            itemLut[itemType]['selector']: True # selector can be 'TOP_RESULT', 'TRACK', 'ARTIST', 'ALBUM', 'PLAYLIST', 'RADIO', 'CHANNEL', 'SHOW', 'EPISODE', 'LIVESTREAM', 'USER'
+        }})
+        if len(res['TOP_RESULT']) > 0 and res['TOP_RESULT'][0]['__TYPE__'] == itemLut[itemType]['type']:
+            items += res['TOP_RESULT']
+            if len(res[itemLut[itemType]['selector']]) > maxResults-1:
+                res[itemLut[itemType]['selector']].pop()
+        items += res[itemLut[itemType]['selector']]
+        if(len(items) == 0 and itemType == 2):
+            return findDeezerReleases(searchTerm, itemType='0', maxResults = 50)
+    #print('findDeezerReleases: ' + str(items))
+    return items
+
+
+def getJSON(mediaType, mediaId, subtype=""):
+    ''' Official API. This function is used to download the ID3 tags.
+        Subtype can be 'albums' or 'tracks'.
+    '''
+    url = f'https://api.deezer.com/{mediaType}/{mediaId}/{subtype}?limit=-1'
+    return requests_retry_session().get(url).json()
+
+def getCoverArtUrl(coverArtId, size, ext):
+    ''' Retrieves the coverart/playlist image from the official API, and
+        returns it.
+    '''
+    url = f'https://e-cdns-images.dzcdn.net/images/cover/{coverArtId}/{size}x{size}.{ext}'
+    return url
+
+
 def deezer_search(search, search_type):
     # search: string (What are you looking for?)
     # search_type: either one of the constants: TYPE_TRACK|TYPE_ALBUM|TYPE_ALBUM_TRACK (TYPE_PLAYLIST is not supported)
@@ -455,44 +533,44 @@ def deezer_search(search, search_type):
         print("ERROR: search_type is wrong: {}".format(search_type))
         return []
     search = urllib.parse.quote_plus(search)
-    if search_type == TYPE_ALBUM_TRACK:
-        resp = get_song_infos_from_deezer_website(TYPE_ALBUM, search)
-    else:
-        resp = session.get("https://api.deezer.com/search/{}?q={}".format(search_type, search)).json()['data']
+    resp = findDeezerReleases(search, search_type)
     return_nice = []
     for item in resp:
         i = {}
         if search_type == TYPE_ALBUM:
-            i['id'] = str(item['id'])
+            i['id'] = str(item['ALB_ID'])
             i['id_type'] = TYPE_ALBUM
-            i['album'] = item['title']
-            i['album_id'] = item['id']
-            i['img_url'] = item['cover_small']
-            i['artist'] = item['artist']['name']
+            i['album'] = item['ALB_TITLE']
+            i['album_id'] = item['ALB_ID']
+
+            i['img_url'] = getCoverArtUrl(item['ALB_PICTURE'], 56, 'jpg')
+            i['artist'] = item['ART_NAME']
             i['title'] = ''
             i['preview_url'] = ''
 
         if search_type == TYPE_TRACK:
-            i['id'] = str(item['id'])
-            i['id_type'] = TYPE_TRACK
-            i['title'] = item['title']
-            i['img_url'] = item['album']['cover_small']
-            i['album'] = item['album']['title']
-            i['album_id'] = item['album']['id']
-            i['artist'] = item['artist']['name']
-            i['preview_url'] = item['preview']
-
-        if search_type == TYPE_ALBUM_TRACK:
             i['id'] = str(item['SNG_ID'])
             i['id_type'] = TYPE_TRACK
             i['title'] = item['SNG_TITLE']
-            i['img_url'] = '' # item['album']['cover_small']
+            i['img_url'] = getCoverArtUrl(item['ALB_PICTURE'], 56, 'jpg')
             i['album'] = item['ALB_TITLE']
             i['album_id'] = item['ALB_ID']
             i['artist'] = item['ART_NAME']
+            i['preview_url'] = item['MEDIA'][0]['HREF']
             i['preview_url'] = next(media['HREF'] for media in item['MEDIA'] if media['TYPE'] == 'preview')
 
+        if search_type == TYPE_ALBUM_TRACK:
+            i['id'] = str(item['id'])
+            i['id_type'] = TYPE_TRACK
+            i['title'] = item['title']
+            i['img_url'] = item['coverArtUrl'] #getCoverArtUrl(item['ALB_PICTURE'], 56, 'jpg')
+            i['album'] = item['album']
+            i['album_id'] = item['album_id']
+            i['artist'] = item['artist']['name']
+            i['preview_url'] = item['preview'] #next(media['HREF'] for media in item['MEDIA'] if media['TYPE'] == 'preview')
+
         return_nice.append(i)
+    print(return_nice[0])
     return return_nice
 
 
