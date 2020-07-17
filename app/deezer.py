@@ -258,14 +258,8 @@ def writeid3v1_1(fo, song):
 
 
 def downloadpicture(pic_idid):
-    resp = session.get(get_picture_link(pic_idid))
+    resp = session.get(getCoverArtUrl(pic_idid, 850, 'jpg'))
     return resp.content
-
-
-def get_picture_link(pic_idid):
-    setting_domain_img = "https://e-cdns-images.dzcdn.net/images"
-    url = setting_domain_img + "/cover/" + pic_idid + "/1200x1200.jpg"
-    return url
 
 
 def writeid3v2(fo, song):
@@ -563,7 +557,7 @@ def deezer_search(search, search_type):
             i['id'] = str(item['id'])
             i['id_type'] = TYPE_TRACK
             i['title'] = item['title']
-            i['img_url'] = item['coverArtUrl'] #getCoverArtUrl(item['ALB_PICTURE'], 56, 'jpg')
+            i['img_url'] = item['coverArtUrl']
             i['album'] = item['album']
             i['album_id'] = item['album_id']
             i['artist'] = item['artist']['name']
