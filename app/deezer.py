@@ -435,46 +435,30 @@ def download_song(song, output_file):
     else:
         print("Dowload finished: {}".format(output_file))
 
+def get_id_from_url(url):
+    regexStr = r'(?:(?:https?:\/\/)?(?:www\.))?deezer\.com\/(?:.*?\/)?(playlist|artist|album|track|)\/([0-9]*)(?:\/?)(tracks|albums|related_playlist|top_track)?'
+    if re.fullmatch(regexStr, url) is None:
+        print(f'"{url}": not a valid link')
+        return False
+    p = re.compile(regexStr)
+    m = p.match(url)
+    mediaType = m.group(1)
+    mediaId = m.group(2)
+    mediaSubType = m.group(3)
+    return mediaId
 
 def get_song_infos_from_deezer_website(search_type, id):
-    # search_type: either one of the constants: TYPE_TRACK|TYPE_ALBUM|TYPE_PLAYLIST
-    # id: deezer_id of the song/album/playlist (like https://www.deezer.com/de/track/823267272)
-    # return: if TYPE_TRACK => song (dict grabbed from the website with information about a song)
-    # return: if TYPE_ALBUM|TYPE_PLAYLIST => list of songs
-    # raises
-    # Deezer404Exception if
-    # 1. open playlist https://www.deezer.com/de/playlist/1180748301 and click on song Honey from Moby in a new tab:
-    # 2. Deezer gives you a 404: https://www.deezer.com/de/track/68925038
-    # Deezer403Exception if we are not logged in
+    if search_type == TYPE_ALBUM:
+        albumInfo = getJSON('album', id)
+        #print('get_song_infos_new: ' + str(albumInfo))
+        print(f"\n{albumInfo['artist']['name']} - {albumInfo['title']}")
 
-    url = "https://www.deezer.com/de/{}/{}".format(search_type, id)
-    resp = session.get(url)
-    if resp.status_code == 404:
-        raise Deezer404Exception("ERROR: Got a 404 for {} from Deezer".format(url))
-    if "MD5_ORIGIN" not in resp.text:
-        raise Deezer403Exception("ERROR: we are not logged in on deezer.com")
-
-    parser = ScriptExtractor()
-    parser.feed(resp.text)
-    parser.close()
-
-    songs = []
-    for script in parser.scripts:
-        regex = re.search(r'{"DATA":.*', script)
-        if regex:
-            DZR_APP_STATE = json.loads(regex.group())
-            global album_Data
-            album_Data = DZR_APP_STATE.get("DATA")
-            if DZR_APP_STATE['DATA']['__TYPE__'] == 'playlist' or DZR_APP_STATE['DATA']['__TYPE__'] == 'album':
-                # songs if you searched for album/playlist
-                for song in DZR_APP_STATE['SONGS']['data']:
-                    songs.append(song)
-            elif DZR_APP_STATE['DATA']['__TYPE__'] == 'song':
-                # just one song on that page
-                songs.append(DZR_APP_STATE['DATA'])
-    return songs[0] if search_type == TYPE_TRACK else songs
-
-
+        urls = [x['link'] for x in albumInfo['tracks']['data']]
+        ids = [get_id_from_url(url) for url in urls]
+        songs = [apiCall('deezer.pageTrack', {'SNG_ID': _id})['DATA'] for _id in ids]
+    else:
+        songs = apiCall('deezer.pageTrack', {'SNG_ID': id})['DATA']
+    return songs
 
 def findDeezerReleases(searchTerm, itemType='2', maxResults = 1000):
     items = []
