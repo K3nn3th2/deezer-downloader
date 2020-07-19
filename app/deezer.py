@@ -469,7 +469,7 @@ def findDeezerReleases(searchTerm, itemType='2', maxResults = 1000):
             trackInfo['album'] = albumInfo['title']
             trackInfo['album_id'] = albumInfo['id']
             trackInfo['coverArtUrl'] = albumInfo['cover_small']
-            print('findDeezerReleases: item:' + str(trackInfo))
+     #       print('findDeezerReleases: item:' + str(trackInfo))
             items.append(trackInfo)
     else:
         itemType = '1' if itemType == 'track' else '2'
@@ -548,7 +548,7 @@ def deezer_search(search, search_type):
             i['preview_url'] = item['preview'] #next(media['HREF'] for media in item['MEDIA'] if media['TYPE'] == 'preview')
 
         return_nice.append(i)
-    print(return_nice[0])
+    #print(return_nice[0])
     return return_nice
 
 

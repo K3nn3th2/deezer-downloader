@@ -133,7 +133,7 @@ def search():
 
 
 @app.route('/download', methods=['POST'])
-@validate_schema("type", "music_id", "add_to_playlist", "create_zip")
+@validate_schema("artist", "album", "title", "type", "music_id", "add_to_playlist", "create_zip")
 def deezer_download_song_or_album():
     """
     downloads a song or an album from Deezer to the dir specified in settings.py
@@ -144,13 +144,17 @@ def deezer_download_song_or_album():
         create_zip: True|False (create a zip for the album)
     """
     user_input = request.get_json(force=True)
-    desc = "Downloading song {}".format(user_input['type'])
     if user_input['type'] == "track":
+        desc = user_input['artist'] + ' - ' + user_input['title']
+        print('deezer_download_song_or_album: ' + desc)
         task = sched.enqueue_task(desc, "download_deezer_song_and_queue",
+                            #      media_type='Track',
                                   track_id=user_input['music_id'],
                                   add_to_playlist=user_input['add_to_playlist'])
     else:
+        desc = user_input['artist'] + ' - ' + user_input['album']
         task = sched.enqueue_task(desc, "download_deezer_album_and_queue_and_zip",
+                             #     media_type='Album',
                                   album_id=user_input['music_id'],
                                   add_to_playlist=user_input['add_to_playlist'],
                                   create_zip=user_input['create_zip'])
