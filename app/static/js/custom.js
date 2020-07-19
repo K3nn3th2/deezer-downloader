@@ -1,7 +1,8 @@
 
-function deezer_download(music_id, type, add_to_playlist, create_zip) {
+function deezer_download(artist, album, title, music_id, type, add_to_playlist, create_zip) {
+    console.log("data: " + music_id + ", " + artist + ", " + album + ", " + title);
     $.post(deezer_downloader_api_root + '/download',
-        JSON.stringify({ type: type, music_id: parseInt(music_id), add_to_playlist: add_to_playlist, create_zip: create_zip}),
+        JSON.stringify({ type: type, music_id: parseInt(music_id), artist: artist, album: album, title: title, add_to_playlist: add_to_playlist, create_zip: create_zip}),
         function(data) {
             if(create_zip == true) {
                 text = "You like being offline? You will get a zip file!";
@@ -107,16 +108,25 @@ $(document).ready(function() {
         
         if(show_mpd_features) {
         row.append($('<td> <button class="btn btn-default" onclick="deezer_download(\'' +
-                     rowData.id  + '\', \''+ rowData.id_type +
+                     rowData.artist  + '\', \'' +
+                     rowData.album  + '\', \'' +
+                     rowData.title  + '\', \'' +
+                     rowData.id  + '\', \''+rowData.id_type +
                      '\', true, false);" > <i class="fa fa-play-circle fa-lg" title="download and queue to mpd" ></i> </button> </td>'));
         }
 
         row.append($('<td> <button class="btn btn-default" onclick="deezer_download(\'' +
+                   rowData.artist  + '\', \'' +
+                   rowData.album  + '\', \'' +
+                   rowData.title  + '\', \'' +
                    rowData.id  + '\', \''+ rowData.id_type + 
                    '\', false, false);" > <i class="fa fa-download fa-lg" title="download" ></i> </button> </td>'));
 
         if(rowData.id_type == "album") {
             row.append($('<td> <button class="btn btn-default" onclick="deezer_download(\'' +
+                     rowData.artist  + '\', \'' +
+                     rowData.album  + '\', \'' +
+                     rowData.title  + '\', \'' +
                        rowData.id  + '\', \''+ rowData.id_type + 
                        '\', false, true);" > <i class="fa fa-file-archive-o fa-lg" title="download as zip file" ></i> </button> </td>'));
         }
@@ -138,14 +148,26 @@ $(document).ready(function() {
             queue_table.html("");
             
             for (var i = data.length - 1; i >= 0; i--) {
-                var html="<tr><td>"+data[i].description+"</td><td>"+JSON.stringify(data[i].args)+"</td>"+
-                "<td>"+data[i].state+"</td></tr>";
+								clean_args = data[i].args.replace(/&#39;/g, "").replace('{','').replace('}', '').replace('"', '').replace('True', 'Yes').replace('False', 'No').split(', ');
+								var html="<tr><td>"+data[i].description+"</td>";
+                html += "<td>"+data[i].media_type+"</td>";
+								clean_args.forEach(item => {
+												// get interesting value without key
+								    value = item.split(': ')[1];
+										console.log('arg! : ' + value)
+										html += "<td>" + value + "</td>";
+								});
+								if (clean_args.length == 2){
+										html += "<td>No</td>";
+								}
+								
+                html += "<td>"+data[i].state+"</td></tr>";
                 $(html).appendTo(queue_table);
                 switch (data[i].state) {
-                case "active":
-                    $("<tr><td colspan=4><progress value="+data[i].progress[0]+" max="+data[i].progress[1]+" style='width:100%'/></td></tr>").appendTo(queue_table);
-                case "failed":
-                    $("<tr><td colspan=4 style='color:red'>"+data[i].exception+"</td></tr>").appendTo(queue_table);
+                case "Downloading":
+                    $("<tr><td colspan=6><progress value="+data[i].progress[0]+" max="+data[i].progress[1]+" style='width:100%'/></td></tr>").appendTo(queue_table);
+                case "Failed":
+                    $("<tr><td colspan=6 style='color:red'>"+data[i].exception+"</td></tr>").appendTo(queue_table);
                 }
             }
             if ($("#nav-task-queue").hasClass("active")) {
