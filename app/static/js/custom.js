@@ -1,6 +1,6 @@
 
 function deezer_download(artist, album, title, music_id, type, add_to_playlist, create_zip) {
-    console.log("data: " + music_id + ', ' + artist + ', ' + album + ', ' + title);
+    console.log("data: " + music_id + ", " + artist + ", " + album + ", " + title);
     $.post(deezer_downloader_api_root + '/download',
         JSON.stringify({ type: type, music_id: parseInt(music_id), artist: artist, album: album, title: title, add_to_playlist: add_to_playlist, create_zip: create_zip}),
         function(data) {
@@ -148,14 +148,26 @@ $(document).ready(function() {
             queue_table.html("");
             
             for (var i = data.length - 1; i >= 0; i--) {
-                var html="<tr><td>"+data[i].description+"</td><td>"+JSON.stringify(data[i].args)+"</td>"+
-                "<td>"+data[i].state+"</td></tr>";
+								clean_args = data[i].args.replace(/&#39;/g, "").replace('{','').replace('}', '').replace('"', '').replace('True', 'Yes').replace('False', 'No').split(', ');
+								var html="<tr><td>"+data[i].description+"</td>";
+                html += "<td>"+data[i].media_type+"</td>";
+								clean_args.forEach(item => {
+												// get interesting value without key
+								    value = item.split(': ')[1];
+										console.log('arg! : ' + value)
+										html += "<td>" + value + "</td>";
+								});
+								if (clean_args.length == 2){
+										html += "<td>No</td>";
+								}
+								
+                html += "<td>"+data[i].state+"</td></tr>";
                 $(html).appendTo(queue_table);
                 switch (data[i].state) {
                 case "Downloading":
-                    $("<tr><td colspan=4><progress value="+data[i].progress[0]+" max="+data[i].progress[1]+" style='width:100%'/></td></tr>").appendTo(queue_table);
+                    $("<tr><td colspan=6><progress value="+data[i].progress[0]+" max="+data[i].progress[1]+" style='width:100%'/></td></tr>").appendTo(queue_table);
                 case "Failed":
-                    $("<tr><td colspan=4 style='color:red'>"+data[i].exception+"</td></tr>").appendTo(queue_table);
+                    $("<tr><td colspan=6 style='color:red'>"+data[i].exception+"</td></tr>").appendTo(queue_table);
                 }
             }
             if ($("#nav-task-queue").hasClass("active")) {

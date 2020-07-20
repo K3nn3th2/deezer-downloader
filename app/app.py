@@ -11,6 +11,9 @@ from music_backend import sched
 from deezer import deezer_search, is_deezer_session_valid
 from configuration import config
 
+# for video info for queue
+from youtube_dl import YoutubeDL
+
 app = Flask(__name__)
 auto_index = AutoIndex(app, config["download_dirs"]["base"], add_url_rules=False)
 auto_index.add_icon_rule('music.png', ext='m3u8')
@@ -106,6 +109,7 @@ def show_queue():
         {'id': id(task),
          'description': escape(task.description),
          #'command': task.fn_name,
+         'media_type': escape(task.media_type),
          'args': escape(task.kwargs),
          'state': escape(task.state),
          'result': escape(task.result),
@@ -158,6 +162,8 @@ def deezer_download_song_or_album():
                                   album_id=user_input['music_id'],
                                   add_to_playlist=user_input['add_to_playlist'],
                                   create_zip=user_input['create_zip'])
+    task.media_type = user_input['type']
+    print('deezer_download_song_or_album: task type: ' + str(task.media_type))
     return jsonify({"task_id": id(task), })
 
 
@@ -171,10 +177,14 @@ def youtubedl_download():
         add_to_playlist: True|False (add to mpd playlist)
     """
     user_input = request.get_json(force=True)
-    desc = "Downloading via youtube-dl"
+    with YoutubeDL({}) as ydl:
+        info_dict = ydl.extract_info(user_input['url'], download=False)
+        video_title = info_dict.get('title', None)
+    desc = video_title 
     task = sched.enqueue_task(desc, "download_youtubedl_and_queue",
                               video_url=user_input['url'],
                               add_to_playlist=user_input['add_to_playlist'])
+    task.media_type = 'Video' 
     return jsonify({"task_id": id(task), })
 
 
@@ -195,6 +205,7 @@ def deezer_playlist_download():
                               playlist_id=user_input['playlist_url'],
                               add_to_playlist=user_input['add_to_playlist'],
                               create_zip=user_input['create_zip'])
+    task.media_type = 'Playlist'
     return jsonify({"task_id": id(task), })
 
 
@@ -218,6 +229,7 @@ def spotify_playlist_download():
                               playlist_id=user_input['playlist_url'],
                               add_to_playlist=user_input['add_to_playlist'],
                               create_zip=user_input['create_zip'])
+    task.media_type = 'Playlist'
     return jsonify({"task_id": id(task), })
 
 
