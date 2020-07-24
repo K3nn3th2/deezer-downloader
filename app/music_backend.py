@@ -1,13 +1,13 @@
 import time
 import os.path
-from os.path import basename
+from os.path import basename, dirname
 import mpd
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from configuration import config
 from youtubedl import youtubedl_download
 from spotify import get_songs_from_spotify_website
-from deezer import TYPE_TRACK, TYPE_ALBUM, TYPE_PLAYLIST, get_song_infos_from_deezer_website, download_song, parse_deezer_playlist, deezer_search, apiCall
+from deezer import TYPE_TRACK, TYPE_ALBUM, TYPE_PLAYLIST, get_song_infos_from_deezer_website, download_song, parse_deezer_playlist, deezer_search, apiCall, download_cover_art
 from deezer import Deezer403Exception, Deezer404Exception
 
 from threadpool_queue import ThreadpoolScheduler, report_progress
@@ -75,7 +75,13 @@ def get_absolute_filename(search_type, song, playlist_name=None):
     if search_type == TYPE_TRACK:
         absolute_filename = os.path.join(config["download_dirs"]["songs"], song_filename)
     elif search_type == TYPE_ALBUM:
-        album_name = "{} - {}".format(song['ART_NAME'], song['ALB_TITLE'])
+        albumArtist = song['albumInfo']['artist']['name']
+        year = song['albumInfo']['release_date'].split('-')[0]
+        label = song['albumInfo']['label']
+        if song['ALB_TITLE'].endswith(' Riddim') or albumArtist == 'Various Artists' or albumArtist == 'VA' or albumArtist == song['ALB_TITLE']:
+            album_name = "{} ({}) [{}]".format(song['ALB_TITLE'], label, year)
+        else:
+            album_name = "{} - {} [{}]".format(albumArtist, song['ALB_TITLE'], year)
         album_name = clean_filename(album_name)
         album_dir = os.path.join(config["download_dirs"]["albums"], album_name)
         if not os.path.exists(album_dir):
@@ -145,6 +151,7 @@ def download_deezer_album_and_queue_and_zip(album_id, add_to_playlist, create_zi
         assert type(song) == dict
         absolute_filename = get_absolute_filename(TYPE_ALBUM, song)
         songs_absolute_location.append(absolute_filename)
+    download_cover_art(songs[0]['ALB_PICTURE'], dirname(absolute_filename))
     update_mpd_db(songs_absolute_location, add_to_playlist)
     if create_zip:
         return [create_zip_file(songs_absolute_location)]
