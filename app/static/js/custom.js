@@ -91,6 +91,13 @@ $(document).ready(function() {
     }
 
     function drawTableEntry(rowData, mtype) {
+				var propValue;
+				for(var propName in rowData) {
+						propValue = rowData[propName]
+
+						console.log(propName,propValue);
+				}
+				console.log("row: " + rowData)
         var row = $("<tr>");
         $("#results").append(row); 
         row.append($("<td>" + rowData.artist + "</td>"));
