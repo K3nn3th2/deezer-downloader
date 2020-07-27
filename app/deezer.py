@@ -464,7 +464,7 @@ def findDeezerReleases(searchTerm, itemType='2', maxResults = 1000):
     items = []
     if itemType == TYPE_ALBUM_TRACK:
         albumInfo = getJSON('album', searchTerm)
-        #print('findDeezerReleases: albumInfo+ ' + str(albumInfo))
+        print('findDeezerReleases: albumInfo[tracks] ' + str(albumInfo['tracks']))
         for trackInfo in albumInfo['tracks']['data'] :
             trackInfo['album'] = albumInfo['title']
             trackInfo['album_id'] = albumInfo['id']
@@ -522,7 +522,8 @@ def deezer_search(search, search_type):
             i['album_id'] = item['ALB_ID']
 
             i['img_url'] = getCoverArtUrl(item['ALB_PICTURE'], 56, 'jpg')
-            i['artist'] = item['ART_NAME']
+            artists = [artist['ART_NAME'] for artist in item['ARTISTS']]
+            i['artist'] = ', '.join(artists)#item['ART_NAME']
             i['title'] = ''
             i['preview_url'] = ''
 
@@ -533,11 +534,13 @@ def deezer_search(search, search_type):
             i['img_url'] = getCoverArtUrl(item['ALB_PICTURE'], 56, 'jpg')
             i['album'] = item['ALB_TITLE']
             i['album_id'] = item['ALB_ID']
-            i['artist'] = item['ART_NAME']
+            artists = [artist['ART_NAME'] for artist in item['ARTISTS']]
+            i['artist'] = ', '.join(artists)#item['ART_NAME']
             i['preview_url'] = item['MEDIA'][0]['HREF']
             i['preview_url'] = next(media['HREF'] for media in item['MEDIA'] if media['TYPE'] == 'preview')
 
         if search_type == TYPE_ALBUM_TRACK:
+            print('deezer_search: ' + str(item))
             i['id'] = str(item['id'])
             i['id_type'] = TYPE_TRACK
             i['title'] = item['title']
