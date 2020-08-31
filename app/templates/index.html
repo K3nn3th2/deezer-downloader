@@ -30,6 +30,9 @@
       background-color: #f5f5f5;
       text-align: center;
     }
+		#input_group {
+		 align: vertical ; 
+		}
 </style>
 
 </head>
@@ -117,6 +120,9 @@
     </li>
     <li class="nav-item">
       <a class="nav-link" id="nav-task-queue" data-toggle="tab" href="#queue">Queue (7)</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="nav-blogs" data-toggle="tab" href="#blogs">Release Blogs (8)</a>
     </li>
   </ul>
   </div>   <!-- end row -->
@@ -241,6 +247,41 @@
      </table>
     </div> <!-- end div tab queue -->
      
+     <div id="blogs" class="container tab-pane fade">
+         <br>
+         {% if deezer_is_working %}
+         <audio src="" controls style="float:right" id="audio_tag"></audio>
+         <h3>Search for Blog Releases on Deezer</h3>
+         <div class="input-group">
+								 <select class="form-control" id="blog_select" placeholder="Choose Website">
+										 <option value = "1">one</option>
+								     <option value = "2">two</option>
+
+								 </select>
+             <select class="form-control" id="sub_blog_select" placeholder="Choose Category" /></select>
+                &nbsp;
+             <span class="input-group-btn">
+                 <input type="text" id="filter_text" placeholder="Filter.."></input>
+                 <button type="button" class="btn btn-info" id="apply_filter" >Apply Filter</button>
+             </span>
+         </div>
+    
+         <table id="results_blogs" class="table">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(0)">Release Name</th>
+                    <th onclick="sortTable(1)">Deezer Result</th>
+                    <th onclick="sortTable(2)">Date</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+				 </table>
+         {% else %}
+        <p>Deezer download is currently broken. Someone probably needs to insert a new session ID.</p>
+         {% endif %}
+				 </div>
+     </div> <!-- end div tab songs/albums -->
     <footer class="footer">
       <div class="container">
 		<i class="fa fa-angellist" ></i> |
@@ -248,7 +289,7 @@
 			ctrl+m: focus search bar |
 			Enter: search songs |
 			Alt+Enter: search albums | 
-			Ctrl+Shift+[1-7]: navigation | 
+			Ctrl+Shift+[1-8]: navigation | 
         </span>
         <a id="werbung" href="https://www.effektiv-spenden.org/spenden-tipps/warum-und-wie-ich-spende-gastbeitrag-christoph-hartmann/"><i class="fa fas fa-heart" title="ja, klick drauf." ></i> </a>
 

@@ -238,7 +238,8 @@ $(document).ready(function() {
 
     
     function show_tab(id_nav, id_content) {
-    // nav 
+    // nav
+    console.log('show_tab called! ' + id_nav);
     $(".nav-link").removeClass("active")
     //$("#btn-show-debug").addClass("active")
     $("#" + id_nav).addClass("active")
@@ -295,6 +296,10 @@ $(document).ready(function() {
                if(event.key === '/') {
                    id_nav = "nav-task-queue";
                    id_content = "queue";
+               }
+               if(event.key === '(') {
+                   id_nav = "nav-blogs";
+                   id_content = "blogs";
                }
                if(typeof id_nav !== 'undefined') {
                    show_tab(id_nav, id_content);
