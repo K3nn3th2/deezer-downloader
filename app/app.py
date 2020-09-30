@@ -11,6 +11,8 @@ from music_backend import sched
 from deezer import deezer_search, is_deezer_session_valid
 from configuration import config
 
+import Scrapers
+
 # for video info for queue
 from youtube_dl import YoutubeDL
 
@@ -119,6 +121,37 @@ def show_queue():
     ]
     return jsonify(results)
 
+@app.route('/blog_search', methods=['POST'])
+def blog_search():
+    """
+    returns search results of stated blog
+    return:
+        JSON: [ results: results ]
+    """
+    user_input = request.get_json(force=True)
+    print('user input blog: ' + user_input['blog'] + '\nquery: ' + user_input['query'])
+    scraper = Scrapers.scrapers[int(user_input['blog'])]
+    results = scraper.get_releases_from_rest_api(user_input['query'])
+    print('RESULTS: ' + str(results))
+    json_results = jsonify(results)
+    print('JSON RESULTS: ' + str(json_results))
+    return json_results
+
+
+@app.route('/blogs', methods=['POST'])
+def blogs():
+    """
+    returns for available blog names
+    return:
+        JSON: [ blogs: (blogs|subblogs) ]
+    """
+    #if user_input['type'] == 'blogs':
+    #elif user_input['type'] == 'subblogs':
+    results = {}
+    results['blogs'] = []
+    for scraper in Scrapers.scrapers:
+        results['blogs'].append(scraper.name)
+    return jsonify(results)
 
 @app.route('/search', methods=['POST'])
 @validate_schema("type", "query")

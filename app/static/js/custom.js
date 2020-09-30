@@ -79,6 +79,47 @@ $(document).ready(function() {
         deezer_load_list(type, $('#songs-albums-query').val());
     }
 
+    function search_blog(){
+				var selected_blog = $('#blog_select').val();
+				console.log("BLOG Search on blog: " + selected_blog)
+				var search_term = $('#filter_text').val()
+
+        $.post(deezer_downloader_api_root + '/blog_search',
+            JSON.stringify({query: search_term, blog: selected_blog }),
+            function(data) {
+										console.log("BLOG_search data: " + data)
+                    $("#results_blogs > tbody").html("");
+                    for (var i = 0; i < data.length; i++) {
+			                	var propValue;
+			                	for(var propName in data[i]) {
+			                			propValue = data[i][propName]
+
+			                			console.log(propName,propValue);
+			                	}
+												if (data[i] != null){
+																draw_blog_table_entry(data[i]);
+												}    
+								    }
+				    });
+		}
+
+
+    function update_blog_selector() {
+        $("#blog_select").empty();
+				console.log("BLOGS-selector updating")
+        $.post(deezer_downloader_api_root + '/blogs',
+            JSON.stringify({ }),
+            function(data) {
+										console.log("BLOGS-data: " + data)
+										var mySelect = $('#blog_select');
+										$.each(data['blogs'], function(val, text) {
+											    mySelect.append(
+												       $('<option></option>').val(val).html(text)
+											    );
+										});
+				    });
+    }
+
     function deezer_load_list(type, query) {
         $.post(deezer_downloader_api_root + '/search',
             JSON.stringify({ type: type, query: query }),
@@ -89,6 +130,44 @@ $(document).ready(function() {
                 }
         });
     }
+
+
+    function download_selected_deezer_entry(event){
+				var selected_deezer = $(event.target).siblings('.deezer_select').find(":selected");
+				/// TODO FILL	
+				//deezer_download(artist, album, title, music_id, type, false, false) {
+		}
+
+
+    function draw_blog_table_entry(rowData){
+				var propValue;
+				for(var propName in rowData) {
+						propValue = rowData[propName]
+
+						console.log(propName,propValue);
+				}
+				console.log("row: " + rowData)
+        var row = $("<tr>");
+        $("#results_blogs").append(row); 
+        row.append("<td><img src='"+rowData.url_cover + "' width=150 height=150> " + rowData.name + "</a></td>");
+				
+				if (rowData.deezer_candidates.length != 0){
+            deezer_selector = $("<select class='deezer_select'>")
+
+			    	for (deez_result in rowData.deezer_candidates){
+			    			console.log("candidate: " + deez_result)
+			    	    deezer_selector.append("<option value=" + deez_result.deezer_link + "><img src='" + deez_result.deezer_cover + "' width=120 height=120> " + deez_result.deezer_name + "</a></option>");
+			    	}
+				    row.append(deezer_selector);
+				}else{
+				    row.append("<td>None found.</td>")
+				}				
+        
+				//row.append($("<td>" + rowData.deezer_name + "</td>"));
+				row.append($("<td>" + rowData.date + "</td>"));
+
+
+		}
 
     function drawTableEntry(rowData, mtype) {
 				var propValue;
@@ -191,6 +270,11 @@ $(document).ready(function() {
         search("album");
     });
     
+    $("#search_blog").click(function() {
+				console.log("searching blog!");
+        search_blog();
+    });
+
     $("#yt_download").click(function() {
         youtubedl_download(false);
     });
@@ -235,6 +319,9 @@ $(document).ready(function() {
         deezer_playlist_download(false, true);
     });
     // END DEEZER
+    $("#nav-blogs").click(function() {
+        update_blog_selector();
+    });
 
     
     function show_tab(id_nav, id_content) {
