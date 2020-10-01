@@ -149,14 +149,14 @@ $(document).ready(function() {
 				console.log("row: " + rowData)
         var row = $("<tr>");
         $("#results_blogs").append(row); 
-        row.append("<td><img src='"+rowData.url_cover + "' width=150 height=150> " + rowData.name + "</a></td>");
+        row.append("<td><img src='"+rowData.url_cover + "' width=100 height=100> " + rowData.name + "</a></td>");
 				
 				if (rowData.deezer_candidates.length != 0){
             deezer_selector = $("<select class='deezer_select'>")
 
-			    	for (deez_result in rowData.deezer_candidates){
+			    	for (deez_result of rowData.deezer_candidates){
 			    			console.log("candidate: " + deez_result)
-			    	    deezer_selector.append("<option value=" + deez_result.deezer_link + "><img src='" + deez_result.deezer_cover + "' width=120 height=120> " + deez_result.deezer_name + "</a></option>");
+			    	    deezer_selector.append('<option value="' + deez_result.deezer_link + '" data-imagesrc="' + deez_result.deezer_cover + '" data-description="by ' + deez_result.deezer_artist + '">' + deez_result.deezer_album + '</option>');
 			    	}
 				    row.append(deezer_selector);
 				}else{
@@ -167,6 +167,10 @@ $(document).ready(function() {
 				row.append($("<td>" + rowData.date + "</td>"));
 
 
+    		$(".deezer_select").ddslick({
+						width:500,
+						height:100
+				});
 		}
 
     function drawTableEntry(rowData, mtype) {
@@ -261,6 +265,12 @@ $(document).ready(function() {
             }
         });
     }
+				/*
+    $('#myDropdown').ddslick({
+				onSelected: function(selectedData){
+				 //callback function: do something with selectedData;
+        }   
+		}); */
 
     $("#search_track").click(function() {
         search("track");
