@@ -20,6 +20,7 @@
   <script src="{{ static_root }}/js/jquery.jgrowl.min.js"></script>
   <link rel="stylesheet" href="{{ static_root }}/css/font-awesome.min.css">
   <link rel="stylesheet" type="text/css" href="{{ static_root }}/css/jquery.jgrowl.min.css" />
+  <link rel="stylesheet" type="text/css" href="{{ static_root }}/css/pretty-checkbox.min.css" />
 
 <style>
     .footer {
@@ -34,14 +35,25 @@
 		#input_group {
 		 align: vertical ; 
 		}
+		#results_blogs td {
+				//border: solid red;
+		}
+		td.deezer_result{
+			 	//display: inline;
+				white-space: nowrap;
+		}
+		div.blog_entry_name{
+				//overflow-wrap: normal;
+				//border: solid black;
+		}
 </style>
 
 </head>
 <body id="body" >
 				<script>
-								function sortTable(n) {
+								function sortTable(n, id) {
 												  var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
-												  table = document.getElementById("results");
+												  table = document.getElementById(id);
 												  switching = true;
 												  // Set the sorting direction to ascending:
 												  dir = "asc";
@@ -148,9 +160,9 @@
          <table id="results" class="table">
             <thead>
                 <tr>
-                    <th onclick="sortTable(0)">Artist</th>
-                    <th onclick="sortTable(1)">Title</th>
-                    <th onclick="sortTable(2)">Album</th>
+                    <th onclick="sortTable(0, 'results')">Artist</th>
+                    <th onclick="sortTable(1, 'results')">Title</th>
+                    <th onclick="sortTable(2, 'results')">Album</th>
                     <th></th>
                 </tr>
             </thead>
@@ -270,9 +282,9 @@
          <table id="results_blogs" class="table">
             <thead>
                 <tr>
-                    <th onclick="sortTable(0)">Release Name</th>
-                    <th onclick="sortTable(1)">Deezer Result</th>
-                    <th onclick="sortTable(2)">Date</th>
+                    <th onclick="sortTable(0, 'results_blogs')">Release Name</th>
+                    <th>Deezer Result</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>

@@ -112,6 +112,7 @@ $(document).ready(function() {
             function(data) {
 										console.log("BLOGS-data: " + data)
 										var mySelect = $('#blog_select');
+								    $("#blog_select").empty();
 										$.each(data['blogs'], function(val, text) {
 											    mySelect.append(
 												       $('<option></option>').val(val).html(text)
@@ -132,6 +133,12 @@ $(document).ready(function() {
     }
 
 
+    function download_blog_release(event){
+				// if dl from deezer toggled, call download_selected_deezer_entry(event)
+						// else call unlock and download from filesharing sites
+
+		}
+
     function download_selected_deezer_entry(event){
 				var selected_deezer = $(event.target).siblings('.deezer_select').find(":selected");
 				/// TODO FILL	
@@ -149,27 +156,30 @@ $(document).ready(function() {
 				console.log("row: " + rowData)
         var row = $("<tr>");
         $("#results_blogs").append(row); 
-        row.append("<td><img src='"+rowData.url_cover + "' width=100 height=100> " + rowData.name + "</a></td>");
+        row.append("<td class='pull-left'><img style='float: left' src='"+rowData.url_cover + "' width=100 height=100></img><div class='blog_entry_name'>" + rowData.name + "</div></td>");
 				
 				if (rowData.deezer_candidates.length != 0){
+				    candidates_wrap = $("<td class='deezer_result'>")
             deezer_selector = $("<select class='deezer_select'>")
 
 			    	for (deez_result of rowData.deezer_candidates){
 			    			console.log("candidate: " + deez_result)
 			    	    deezer_selector.append('<option value="' + deez_result.deezer_link + '" data-imagesrc="' + deez_result.deezer_cover + '" data-description="by ' + deez_result.deezer_artist + '">' + deez_result.deezer_album + '</option>');
 			    	}
-				    row.append(deezer_selector);
+				    candidates_wrap.append('<div class="pretty p-switch p-fill"><input type="checkbox" /><div class="state p-success"><label>Download from Deezer</label></div></div>');
+				    candidates_wrap.append(deezer_selector);
+				    row.append(candidates_wrap);
 				}else{
 				    row.append("<td>None found.</td>")
 				}				
         
 				//row.append($("<td>" + rowData.deezer_name + "</td>"));
-				row.append($("<td>" + rowData.date + "</td>"));
+        row.append($('<td > <button class="btn btn-default" onclick="download_blog_release()" > <i class="fa fa-download fa-lg" title="download" ></i> </button> </td>'));
 
 
     		$(".deezer_select").ddslick({
 						width:500,
-						height:100
+						height:250
 				});
 		}
 

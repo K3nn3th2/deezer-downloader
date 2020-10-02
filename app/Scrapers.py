@@ -408,6 +408,7 @@ class Scraper(QtCore.QObject):
         found_releases_amount = 100
         start_page = 1
         found_releases = []
+        found_releases_par = []
         url = self.base_url + rest_string + '&page='
         while(found_releases_amount == 100):
             self.increase_page_count.emit(1)
@@ -423,13 +424,19 @@ class Scraper(QtCore.QObject):
             found_releases_amount = len(json_result)
             print(found_releases_amount)
             #LINK_REGEX = re.compile(r'href="(.*?)"')
+            start = time.time()
             for entry in json_result:
                 new_riddim = self.handle_rest_release(entry)
                 found_releases.append(new_riddim)
-            #p = Pool(processes = found_releases_amount)
-            #found_releases += p.map(self.handle_rest_release, json_result)
-            #p.terminate()
-            #p.join()
+            end = time.time()
+            startpar = time.time()
+            p = Pool(processes = found_releases_amount)
+            found_releases_par += p.map(self.handle_rest_release, json_result)
+            p.terminate()
+            p.join()
+            endpar = time.time()
+            print('__HANDLING RELEASES SERIALLY TOOK: ' + str(end - start))
+            print('__HANDLING RELEASES IN PARALLEL TOOK: ' + str(endpar - startpar))
             self.increase_processed_page_count.emit(1)
         #print('found: ' + str(len(found_releases)))
         self.scraping = False
@@ -526,7 +533,7 @@ class Scraper(QtCore.QObject):
             return
         thread_link = entry['link']
             #print( name + ': ' + str(clean_links))
-        new_riddim = {"name": name, "deezer_candidates": candidates, "thread_link": thread_link, "query": self.query, "url_cover": cover}
+        new_riddim = {"name": title, "deezer_candidates": candidates, "thread_link": thread_link, "query": self.query, "url_cover": cover}
         #new_riddim = Riddim(name, link, self.query, self, urlCover=cover)
         #new_riddim = Riddim(name.replace(u'\u2013', ' - ').replace(U'\u2018', "'").replace(u'\u2019', "'").replace(u'\u201C', '"').replace(u'\u201D', '"'), entry['link'], self.query, self, cover)
         #if len(clean_links) > 0:
@@ -551,6 +558,7 @@ class Scraper(QtCore.QObject):
         found_releases_amount = 100
         start_page = 1
         found_releases = []
+        found_releases_par = []
         url = self.base_url + rest_string + '&page='
         while(found_releases_amount == 100):
             self.increase_page_count.emit(1)
@@ -568,15 +576,22 @@ class Scraper(QtCore.QObject):
             found_releases_amount = len(json_result)
             print(found_releases_amount)
             #LINK_REGEX = re.compile(r'href="(.*?)"')
+            start = time.time()
             for entry in json_result:
                 #print('ENTRY: ' + str(entry))
                 new_riddim = self.handle_rest_release(entry)
                 found_releases.append(new_riddim)
-                print('NEW RIDDIM: ' + str(new_riddim))
-            #p = Pool(processes = found_releases_amount)
-            #found_releases += p.map(self.handle_rest_release, json_result)
-            #p.terminate()
-            #p.join()
+            end = time.time()
+            '''
+            startpar = time.time()
+            p = Pool(processes = found_releases_amount)
+            found_releases_par += p.map(self.handle_rest_release, json_result)
+            p.terminate()
+            p.join()
+            endpar = time.time()
+            print('__HANDLING RELEASES SERIALLY TOOK: ' + str(end - start))
+            print('__HANDLING RELEASES IN PARALLEL TOOK: ' + str(endpar - startpar))
+            '''
             self.increase_processed_page_count.emit(1)
         #print('found: ' + str(len(found_releases)))
         self.scraping = False
