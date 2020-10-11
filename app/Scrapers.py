@@ -15,6 +15,7 @@ import html
 from atom.api import Atom, Unicode, Range, Bool, Str, observe, Typed
 
 import sys, os, math, re
+from datetime import datetime
 import requests
 import faster_than_requests as requests2
 from base64 import *
@@ -442,20 +443,22 @@ class Scraper(QtCore.QObject):
         self.scraping = False
         return found_releases
 
-    def clean_name_for_search(self, name_passed):
+    def clean_name_for_search(self, name_passed, chunk_amount=2):
         clean_name = name_passed
 		# TODO for each year from 1960 till now -> add to not wanted eg. [1960]
-		#for x in enumerate(1960, 2020)
-        not_wanted = ['[full promo]', ' ft ', ' ep ', ' lp ', '[promo]', '&', ',']
+        not_wanted =  ['[full promo]', ' ft ', ' ep', ' lp', '[promo]', '&', 'riddim driven', ' (reggae)', ' (dancehall)', ' x ', ',']
+        for date in range(1900, datetime.today().year):
+            not_wanted.append('[' + str(date) + ']')
+            not_wanted.append(str(date))
         for nw in not_wanted:
             clean_name = clean_name.lower().replace(nw, ' ')
         #name_split = clean_name.split(u'u\2013')
         name_split = clean_name.split('–')
         print(name_split)
         if 'riddim' in name_split[0].strip().lower():
-            clean_name = name_split[0]
+            clean_name = name_split[0].split('riddim')[0] + ' riddim'
         else:
-            clean_name = ' '.join(name_split[:2])
+            clean_name = ' '.join(name_split[:int(chunk_amount)])
         '''
         elif self.query in name_split[0].strip().lower():
             if len(name_split) == 2:
@@ -472,16 +475,29 @@ class Scraper(QtCore.QObject):
         title = html.unescape(entry['title']['rendered'])
         #name = '-'.join(html.unescape(title).split(u'\u2013')[:-1])
         #name = html.unescape(entry['title']['rendered']).split(u'\u2013')[0]
-        name = self.clean_name_for_search(title)
+        #name = self.clean_name_for_search(title)
+        name = ''
         clean_links = []
         cover = ''
         deezer_link = ''
-        deezer_results_album = findDeezerReleases(name)
-        deezer_results_playlist = findDeezerReleases(name, itemType = '4')
+        #deezer_results_album = findDeezerReleases(name)
+        deezer_results_album = []
         #print(deezer_results_album)
         candidates = []
+        
+        print('before for loop.')
+        for i in [2,1]:
+            print('in for loop: ' + str(i))
+            name = self.clean_name_for_search(title, i)
+            deezer_results_album = findDeezerReleases(name)
+            if len(deezer_results_album) != 0:
+                break
+        if len(deezer_results_album) == 0:
+            name = name.replace('riddim', '')
+            deezer_results_album = findDeezerReleases(name)
+
         if len(deezer_results_album) != 0:
-            top_candidates = deezer_results_album[0:5]
+            top_candidates = deezer_results_album[0:6]
             for top_candidate in top_candidates:
                 pprint('CANDIDATE: ' + str(top_candidate))
                 string = itemLut['2']['tuple'](0, top_candidate)
@@ -495,15 +511,15 @@ class Scraper(QtCore.QObject):
                     "type": top_candidate['__TYPE__']
                 })
                 print('found deezer album: ' + string[1])
-                '''
-        elif len(deezer_results_playlist) != 0:
-            top_candidate = deezer_results_playlist[0]
-
-            string = itemLut['4']['tuple'](0, top_candidate)
-            deezer_name = string[1]
-            deezer_link = itemLut['4']['url'](top_candidate)
-            print('found deezer playlist: ' + name + ': ' + link)
-        '''
+        #else:
+        #    deezer_results_playlist = findDeezerReleases(name, itemType = '4')
+        #    if len(deezer_results_playlist) != 0:
+        #        top_candidate = deezer_results_playlist[0]
+#
+#                string = itemLut['4']['tuple'](0, top_candidate)
+#                deezer_name = string[1]
+#                deezer_link = itemLut['4']['url'](top_candidate)
+#                print('found deezer playlist: ' + name + ': ' + link)
         #start = time.time()
         xpath_links = '//a/@href'
         xpath_cover = '//img/@src'
