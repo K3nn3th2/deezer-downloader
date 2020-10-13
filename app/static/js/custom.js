@@ -93,8 +93,8 @@ $(document).ready(function() {
 														draw_blog_table_entry(data[i]);
 										}    
 								}
+								$('#loader_blog').hide()
             });
-				$('#loader_blog').hide()
 		}
     
 		function make_page_headers(amount, scraper_no){
