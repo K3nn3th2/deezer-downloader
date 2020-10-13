@@ -497,7 +497,7 @@ class Scraper(QtCore.QObject):
             deezer_results_album = findDeezerReleases(name)
 
         if len(deezer_results_album) != 0:
-            top_candidates = deezer_results_album[0:6]
+            top_candidates = deezer_results_album[0:15]
             for top_candidate in top_candidates:
                 pprint('CANDIDATE: ' + str(top_candidate))
                 string = itemLut['2']['tuple'](0, top_candidate)
@@ -533,8 +533,10 @@ class Scraper(QtCore.QObject):
         #for l in links_regex:
         #    print(str(l))
         try:
-            cover = tree.xpath(xpath_cover)
-            #print('cover: ' + str(cover))
+            yoast_tree = lxml.html.fromstring(str(entry['yoast_head']))
+            xpath_cover = '//meta[@property="og:image"]/@content'
+            cover = yoast_tree.xpath(xpath_cover)
+            print('cover: ' + str(cover))
             if cover != []:
                 # if we found coverArt URL strings, use the first one
                 cover = cover[0]
@@ -571,6 +573,8 @@ class Scraper(QtCore.QObject):
                 month_string = '-' + start_month + '-01T00:00:00'
             after_string += month_string
             rest_string += after_string + before_string
+        # add blog-specific excluders (news etc)
+        rest_string += self.exclude_string
         found_releases_amount = 100
         start_page = 1
         found_releases = []
@@ -811,11 +815,16 @@ class Scraper(QtCore.QObject):
 
 class RiddimsCoScraper(Scraper):
     """docstring for RiddimsCoScraper"""
+    ''' categories:
+            News: 1378
+
+    '''
 
     ## TODO: update scraper to use
     def __init__(self):
         super(RiddimsCoScraper, self).__init__()
         self.password = ''
+        self.exclude_string = '&categories_exclude=1378'
         self.rest_api_support = True
         self.folderName = 'RiddimsWorld.com'
         #self.logoUrl = 'https://i1.wp.com/www.riddims.co/wp-content/uploads/2018/08/riddims-dancehall-reggae-soca-world.jpg'
@@ -904,6 +913,7 @@ class DancehallArenaScraper(Scraper):
     def __init__(self):
         super(DancehallArenaScraper, self).__init__()
         self.password = ''
+        self.exclude_string = '&categories_exclude=27388, 4'
         self.rest_api_support = True
         self.folderName = 'DancehallArena.com'
         self.name = 'DancehallArena.com'
@@ -925,6 +935,7 @@ class DancehallStarScraper(Scraper):
         super(DancehallStarScraper, self).__init__()
         self.splitScrape = True
         self.password = ''
+        self.exclude_string = '&categories_exclude='
         self.rest_api_support = False
         self.folderName = 'DancehallStar.net'
         self.name = 'DancehallStar.net'
@@ -979,6 +990,7 @@ class DancehallWorldScraper(Scraper):
     def __init__(self):
         super(DancehallWorldScraper, self).__init__()
         self.password = ''
+        self.exclude_string = '&categories_exclude=4146, 1075, 10,   4149, 1078, 1079, 1080, 22, 23, 25'#, 17, ' 17 is video
         self.rest_api_support = True
         self.folderName = 'DancehallWorld.net'
         self.name = 'DancehallWorld.net'
@@ -999,6 +1011,7 @@ class ReggaeFreshScraper(Scraper):
     def __init__(self):
         super(ReggaeFreshScraper, self).__init__()
         self.password = ''
+        self.exclude_string = '&categories_exclude=4'
         self.rest_api_support = True
         self.folderName = 'ReggaeFresh.com'
         self.name = 'ReggaeFresh.com'
@@ -1052,7 +1065,7 @@ class AllTimeRiddimScraper(Scraper):
         self.xpath_links = '//div[@class = "td-post-content"]//a/@href'
 
 scrapers = [
-        DancehallStarScraper(),
+#        DancehallStarScraper(), no REST API anymore?
         #DancehallWorldScraper(), # dead?
         DancehallArenaScraper(),
         ReggaeFreshScraper(),

@@ -366,7 +366,11 @@ $(document).ready(function() {
                search("album");
            }  else if (event.key === 'Enter' ) {
                console.log("pressed Enter");
-               search("track");
+				       if($(".nav-link.active").attr('id') == "nav-blogs"){
+								   search_blog();
+				       }else{
+				           search("track");
+							 }
            } else if (event.key === 'm' && event.ctrlKey) {
               console.log("pressed ctrl m");
               $("#songs-albums-query")[0].value = "";
