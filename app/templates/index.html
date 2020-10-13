@@ -12,6 +12,7 @@
   <script src="{{ static_root }}/js/jquery.min.js"></script>
   <script src="{{ static_root }}/js/popper.min.js"></script>
   <script src="{{ static_root }}/js/bootstrap.min.js"></script>
+  <script src="{{ static_root }}/js/jquery.simplePagination.js"></script>
   <script>
       var show_mpd_features = {{ use_mpd }};
   </script>
@@ -21,6 +22,7 @@
   <link rel="stylesheet" href="{{ static_root }}/css/font-awesome.min.css">
   <link rel="stylesheet" type="text/css" href="{{ static_root }}/css/jquery.jgrowl.min.css" />
   <link rel="stylesheet" type="text/css" href="{{ static_root }}/css/pretty-checkbox.min.css" />
+  <link rel="stylesheet" type="text/css" href="{{ static_root }}/css/simplePagination.css" />
 
 <style>
     .footer {
@@ -46,11 +48,30 @@
 				//overflow-wrap: normal;
 				//border: solid black;
 		}
+
+    .rotate {
+			height: 30px;
+			width: 30px;
+      animation: rotation 2s infinite linear;
+    }
+    
+    @keyframes rotation {
+      from {
+        transform: rotate3d(0,1,0,0deg);
+      }
+      to {
+        transform: rotate3d(0,1,0,359deg);
+      }
+    }
+		#pagination_blogs{
+				//visibility: hidden;
+		}
 </style>
 
 </head>
 <body id="body" >
 				<script>
+
 								function sortTable(n, id) {
 												  var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
 												  table = document.getElementById(id);
@@ -276,8 +297,11 @@
              <span class="input-group-btn">
                  <input type="text" id="filter_text" placeholder="Filter.."></input>
                  <button type="button" class="btn btn-info" id="search_blog">Search Blog..</button>
+								 <img id="loader_blog" class="rotate" src="{{ static_root }}/img/vinyl.png"/>
              </span>
          </div>
+				 <div id="pagination_blogs">
+				 </div>
     
          <table id="results_blogs" class="table">
             <thead>

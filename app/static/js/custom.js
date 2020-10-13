@@ -62,7 +62,6 @@ $(document).ready(function() {
     }
 
 
-
     function deezer_playlist_download(add_to_playlist, create_zip) {
         $.post(deezer_downloader_api_root + '/playlist/deezer',
             JSON.stringify({ playlist_url: $('#deezer-playlist-url').val(),
@@ -79,27 +78,61 @@ $(document).ready(function() {
         deezer_load_list(type, $('#songs-albums-query').val());
     }
 
+	
+		function get_page(page, event){
+				$('#loader_blog').show()
+				scraper_no = $("#results_blogs").attr("scraper_no");
+				console.log("get_page called with scraper: " + scraper_no);
+        $.post(deezer_downloader_api_root + '/blog_search/page',
+            JSON.stringify({page: page - 1,
+														scraper_no: scraper_no}),
+            function(data) {
+                $("#results_blogs > tbody").html("");
+                for (var i = 0; i < data.length; i++) {
+										if (data[i] != null){
+														draw_blog_table_entry(data[i]);
+										}    
+								}
+            });
+				$('#loader_blog').hide()
+		}
+    
+		function make_page_headers(amount, scraper_no){
+				$("#pagination_blogs").show();
+				$(function() {
+   				 $("#pagination_blogs").pagination({
+        			pages: amount,
+        			cssStyle: 'light-theme',
+							onPageClick: function(pageNumber, event){
+								get_page(pageNumber, event);
+							}
+    				});
+				});
+		}
+
     function search_blog(){
+				$("#pagination_blogs").hide();
+				$('#loader_blog').show()
 				var selected_blog = $('#blog_select').val();
 				console.log("BLOG Search on blog: " + selected_blog)
 				var search_term = $('#filter_text').val()
-
+				$("#results_blogs").attr("scraper_no", selected_blog)
         $.post(deezer_downloader_api_root + '/blog_search',
             JSON.stringify({query: search_term, blog: selected_blog }),
             function(data) {
 										console.log("BLOG_search data: " + data)
                     $("#results_blogs > tbody").html("");
-                    for (var i = 0; i < data.length; i++) {
-			                	var propValue;
-			                	for(var propName in data[i]) {
-			                			propValue = data[i][propName]
-
-			                			console.log(propName,propValue);
-			                	}
-												if (data[i] != null){
-																draw_blog_table_entry(data[i]);
+										if (data.pages > 1){
+												make_page_headers(data.pages);
+										}
+                    for (var i = 0; i < data.releases.length; i++) {
+												if (data.releases[i] != null){
+																draw_blog_table_entry(data.releases[i]);
 												}    
 								    }
+								    $('#loader_blog').hide()
+										console.log("PAGES: " + data.pages);
+
 				    });
 		}
 
@@ -118,6 +151,7 @@ $(document).ready(function() {
 												       $('<option></option>').val(val).html(text)
 											    );
 										});
+								    $('#loader_blog').hide()
 				    });
     }
 
@@ -166,7 +200,7 @@ $(document).ready(function() {
 			    			console.log("candidate: " + deez_result)
 			    	    deezer_selector.append('<option value="' + deez_result.deezer_link + '" data-imagesrc="' + deez_result.deezer_cover + '" data-description="by ' + deez_result.deezer_artist + '">' + deez_result.deezer_album + '</option>');
 			    	}
-				    candidates_wrap.append('<div class="pretty p-switch p-fill"><input type="checkbox" /><div class="state p-success"><label>Download from Deezer</label></div></div>');
+				    candidates_wrap.append('<div class="pretty p-switch p-fill"><input type="checkbox" checked=true/><div class="state p-success"><label>Download from Deezer</label></div></div>');
 				    candidates_wrap.append(deezer_selector);
 				    row.append(candidates_wrap);
 				}else{

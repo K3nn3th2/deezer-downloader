@@ -132,7 +132,28 @@ def blog_search():
     print('user input blog: ' + user_input['blog'] + '\nquery: ' + user_input['query'])
     scraper = Scrapers.scrapers[int(user_input['blog'])]
     results = scraper.get_releases_from_rest_api(user_input['query'])
-    print('RESULTS: ' + str(results))
+    
+    #print('RESULTS: ' + str(results))
+    #results.append({'pages': page_amount})
+    json_results = jsonify(results)
+    #print('JSON RESULTS: ' + str(json_results))
+    return json_results
+
+@app.route('/blog_search/page', methods=['POST'])
+def blog_search_page():
+    """
+    returns search results of stated blog
+    return:
+        JSON: [ results: results ]
+    """
+    user_input = request.get_json(force=True)
+    print('user input page: ' + str(user_input['page']))
+    print('user input scraper_no: ' + str(user_input['scraper_no']))
+    scraper = Scrapers.scrapers[int(user_input['scraper_no'])]
+    results = scraper.get_page_no(user_input['page'])
+    
+    #print('RESULTS: ' + str(results))
+    #results.append({'pages': page_amount})
     json_results = jsonify(results)
     print('JSON RESULTS: ' + str(json_results))
     return json_results

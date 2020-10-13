@@ -54,6 +54,7 @@ lockedLinks = lockedLinksAdfLy + lockedLinksSimple
 
 _threaded = True
 
+_per_page = 15
 
 musicLinks = [
         'soundcloud.com',
@@ -298,11 +299,13 @@ def unlockClearload(link, referer):
 class Scraper(QtCore.QObject):
     """The Scraper Class is a base class for scrapers of specific websites.
        It acts as an interface so that the Downloader class can call the same methods for every scraper."""
+    '''
     updated = QtCore.pyqtSignal()
     releaseItemReady = QtCore.pyqtSignal(object)
     riddimReady = QtCore.pyqtSignal(Riddim)
     increase_page_count = QtCore.pyqtSignal(int)
     increase_processed_page_count = QtCore.pyqtSignal(int)
+    '''
     def __init__(self):
         """docstrign"""
         super(Scraper, self).__init__()
@@ -412,7 +415,6 @@ class Scraper(QtCore.QObject):
         found_releases_par = []
         url = self.base_url + rest_string + '&page='
         while(found_releases_amount == 100):
-            self.increase_page_count.emit(1)
             url_page = url + str(start_page)
             #url_page = "{:}{:}".format(url, start_page)
             start_page += 1
@@ -438,7 +440,7 @@ class Scraper(QtCore.QObject):
             endpar = time.time()
             print('__HANDLING RELEASES SERIALLY TOOK: ' + str(end - start))
             print('__HANDLING RELEASES IN PARALLEL TOOK: ' + str(endpar - startpar))
-            self.increase_processed_page_count.emit(1)
+            #self.increase_processed_page_count.emit(1)
         #print('found: ' + str(len(found_releases)))
         self.scraping = False
         return found_releases
@@ -499,7 +501,7 @@ class Scraper(QtCore.QObject):
         if len(deezer_results_album) != 0:
             top_candidates = deezer_results_album[0:15]
             for top_candidate in top_candidates:
-                pprint('CANDIDATE: ' + str(top_candidate))
+        #        pprint('CANDIDATE: ' + str(top_candidate))
                 string = itemLut['2']['tuple'](0, top_candidate)
                 candidates.append({
                     "deezer_album": top_candidate["ALB_TITLE"], 
@@ -561,9 +563,22 @@ class Scraper(QtCore.QObject):
         # emit signal with new_riddim
         return new_riddim
 
+    ''' returns releases from a specific page number '''
+    def get_page_no(self, page_number):
+        if self.pages_processed[page_number] == '':
+            self.pages_processed[page_number] = []
+            for entry in self.pages[page_number]:
+                #print('ENTRY: ' + str(entry))
+                new_release = self.handle_rest_release(entry)
+                self.pages_processed[page_number].append(new_release)
+        return self.pages_processed[page_number]
+
+    ''' downloads all pages of the search result from REST api
+        returns the first page, processed.
+    '''
     def get_releases_from_rest_api(self, search_string, start_year='ALL', start_month=None):
         self.query = search_string
-        rest_string = '/wp-json/wp/v2/posts?search=' + search_string + '&per_page=100'
+        rest_string = '/wp-json/wp/v2/posts?search=' + search_string + '&per_page=' + str(_per_page)
         if start_year.lower() != 'all':
             before_string = '&before=' + str(int(start_year) + 1) + '-01-01T00:00:00'
             after_string = '&after=' + start_year
@@ -575,19 +590,21 @@ class Scraper(QtCore.QObject):
             rest_string += after_string + before_string
         # add blog-specific excluders (news etc)
         rest_string += self.exclude_string
-        found_releases_amount = 100
-        start_page = 1
+        found_releases_amount = _per_page
+        start_page = 0
         found_releases = []
-        found_releases_par = []
+        #found_releases_par = []
+        self.pages = []
+        self.pages_processed = []
         url = self.base_url + rest_string + '&page='
-        while(found_releases_amount == 100):
-            self.increase_page_count.emit(1)
-            url_page = url + str(start_page)
-            #url_page = "{:}{:}".format(url, start_page)
+        while(found_releases_amount == _per_page):
             start_page += 1
+            url_page = url + str(start_page)
             print(url_page)
             result = requests.get(url_page, headers=random_headers())
             json_result = json.loads(result.content)
+            self.pages.append(json_result)
+            self.pages_processed.append("")
             if len(json_result) < 5:
                 print(str(type(json_result)))
                 print('result in json: ' + str(json_result))
@@ -596,26 +613,22 @@ class Scraper(QtCore.QObject):
             found_releases_amount = len(json_result)
             print(found_releases_amount)
             #LINK_REGEX = re.compile(r'href="(.*?)"')
-            start = time.time()
-            for entry in json_result:
-                #print('ENTRY: ' + str(entry))
-                new_riddim = self.handle_rest_release(entry)
-                found_releases.append(new_riddim)
-            end = time.time()
-            '''
-            startpar = time.time()
-            p = Pool(processes = found_releases_amount)
-            found_releases_par += p.map(self.handle_rest_release, json_result)
-            p.terminate()
-            p.join()
-            endpar = time.time()
-            print('__HANDLING RELEASES SERIALLY TOOK: ' + str(end - start))
-            print('__HANDLING RELEASES IN PARALLEL TOOK: ' + str(endpar - startpar))
-            '''
-            self.increase_processed_page_count.emit(1)
-        #print('found: ' + str(len(found_releases)))
-        self.scraping = False
-        return found_releases
+        #self.pages_processed = [len(self.pages) * '']
+        
+        '''
+        startpar = time.time()
+        p = Pool(processes = found_releases_amount)
+        found_releases_par += p.map(self.handle_rest_release, json_result)
+        p.terminate()
+        p.join()
+        endpar = time.time()
+        print('__HANDLING RELEASES SERIALLY TOOK: ' + str(end - start))
+        print('__HANDLING RELEASES IN PARALLEL TOOK: ' + str(endpar - startpar))
+        '''
+        print('length pages: ' + str(len(self.pages)))
+        print('length pages_processed: ' + str(len(self.pages_processed)))
+        found_releases = self.get_page_no(0)
+        return {'pages': start_page, 'releases': found_releases}
 
 
     def get_releases_from_search(self, query):
@@ -640,7 +653,7 @@ class Scraper(QtCore.QObject):
         self.query = query
         cataloguePages = []
         results = self.get_releases_from_page(pageContent[0])
-        self.increase_page_count.emit(num_pages)
+        #self.increase_page_count.emit(num_pages)
         if num_pages > 1:
             for x in range(2,num_pages+1):
                 cataloguePage = self.base_url + addIn + '/page/' + str(x) + '/?s=' + query
@@ -704,7 +717,7 @@ class Scraper(QtCore.QObject):
         #for riddim in riddims:
         #    self.scrape_riddimInfo(riddim)
         time.sleep(.01)
-        self.updated.emit()
+        #self.updated.emit()
         print('finished!')
         return riddims
 
@@ -732,7 +745,7 @@ class Scraper(QtCore.QObject):
         else:
             print(('Nothing found for ' + riddim.name))
         riddim.ready = True
-        self.riddimReady.emit(riddim)
+        #self.riddimReady.emit(riddim)
         return cleanLinks
 
     def tryToUnpack(self, filePath, releaseName=''):
@@ -982,7 +995,7 @@ class DancehallStarScraper(Scraper):
         else:
             print(('Nothing found for ' + riddim.name))
         riddim.ready = True
-        self.riddimReady.emit(riddim)
+        #self.riddimReady.emit(riddim)
         return cleanLinks
 
 
