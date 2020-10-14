@@ -129,7 +129,8 @@ $(document).ready(function() {
 												if (data.releases[i] != null){
 																draw_blog_table_entry(data.releases[i]);
 												}    
-								    }
+										}
+										$('.btn-dl-blog').click(download_blog_release);
 								    $('#loader_blog').hide()
 										console.log("PAGES: " + data.pages);
 
@@ -169,14 +170,29 @@ $(document).ready(function() {
 
     function download_blog_release(event){
 				// if dl from deezer toggled, call download_selected_deezer_entry(event)
-						// else call unlock and download from filesharing sites
-
+				var selected_deezer_checkbox = $(event.target).closest('tr').find('input:checkbox');//.find(":selected");
+				if (selected_deezer_checkbox.prop('checked')){
+								console.log('DEEZER SELECTED: TRUE');
+								download_selected_deezer_entry(event);
+				}else{		// else call unlock and download from filesharing sites
+								console.log('DEEZER SELECTED: FALSE');
+				}
 		}
 
     function download_selected_deezer_entry(event){
-				var selected_deezer = $(event.target).siblings('.deezer_select').find(":selected");
+				var selected_deezer = $(event.target).closest('tr').find('.dd-select');//.find(":selected");
 				/// TODO FILL	
-				//deezer_download(artist, album, title, music_id, type, false, false) {
+				var propValue;
+				console.log('EVENT TARGET: ' + event.target.tagName);
+				artist = selected_deezer.find('.dd-selected-artist').val();
+				album = selected_deezer.find('.dd-selected-album').val();
+				type = selected_deezer.find('.dd-selected-type').val();
+				title = selected_deezer.find('.dd-selected-title').val();
+				id = selected_deezer.find('.dd-selected-id').val();
+
+				//url_bits = selected_deezer.find('.dd-selected-value').val().split("/");
+					//	console.log("MUSIC ID : " + url_bits[url_bits.length - 1]);
+				deezer_download(artist, album, title, id, type, false, false); 
 		}
 
 
@@ -198,9 +214,9 @@ $(document).ready(function() {
 
 			    	for (deez_result of rowData.deezer_candidates){
 			    			console.log("candidate: " + deez_result)
-			    	    deezer_selector.append('<option value="' + deez_result.deezer_link + '" data-imagesrc="' + deez_result.deezer_cover + '" data-description="by ' + deez_result.deezer_artist + '">' + deez_result.deezer_album + '</option>');
+			    	    deezer_selector.append('<option id="' + deez_result.deezer_id + '" artist="' + deez_result.deezer_artist + '" type="' + deez_result.type + '" title="' + deez_result.deezer_name + '" album="' + deez_result.deezer_album + '" value="' + deez_result.deezer_link + '" data-imagesrc="' + deez_result.deezer_cover + '" data-description="by ' + deez_result.deezer_artist + '">' + deez_result.deezer_album + '</option>');
 			    	}
-				    candidates_wrap.append('<div class="pretty p-switch p-fill"><input type="checkbox" checked=true/><div class="state p-success"><label>Download from Deezer</label></div></div>');
+				    candidates_wrap.append('<div class="pretty p-switch p-fill"><input class="deezer_check" type="checkbox" checked=true/><div class="state p-success"><label>Download from Deezer</label></div></div>');
 				    candidates_wrap.append(deezer_selector);
 				    row.append(candidates_wrap);
 				}else{
@@ -208,7 +224,8 @@ $(document).ready(function() {
 				}				
         
 				//row.append($("<td>" + rowData.deezer_name + "</td>"));
-        row.append($('<td > <button class="btn btn-default" onclick="download_blog_release()" > <i class="fa fa-download fa-lg" title="download" ></i> </button> </td>'));
+        row.append($('<td > <button class="btn btn-default btn-dl-blog"> <i class="fa fa-download fa-lg" title="download" ></i> </button> </td>'));
+
 
 
     		$(".deezer_select").ddslick({

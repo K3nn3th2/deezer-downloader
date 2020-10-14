@@ -12,8 +12,6 @@ from deezer import *
 import time, json, random
 import html
 
-from atom.api import Atom, Unicode, Range, Bool, Str, observe, Typed
-
 import sys, os, math, re
 from datetime import datetime
 import requests
@@ -24,8 +22,6 @@ from Riddim import *
 from pprint import pprint
 
 from unshortenit import UnshortenIt
-
-from PyQt5 import QtCore
 
 
 spacer = ' ' * 5
@@ -296,7 +292,7 @@ def unlockClearload(link, referer):
 
 
 
-class Scraper(QtCore.QObject):
+class Scraper(object):
     """The Scraper Class is a base class for scrapers of specific websites.
        It acts as an interface so that the Downloader class can call the same methods for every scraper."""
     '''
@@ -507,7 +503,7 @@ class Scraper(QtCore.QObject):
                     "deezer_album": top_candidate["ALB_TITLE"], 
                     "deezer_artist": top_candidate["ART_NAME"], 
                     "deezer_name": top_candidate["ALB_TITLE"] if top_candidate["__TYPE__"] == "album" else top_candidate["SONG_TITLE"],
-                    "deezer_id": top_candidate["ALB_ID"], # Song id if type track?
+                    "deezer_id": itemLut['2']['url'](top_candidate).split('/')[-1], # Song id if type track?
                     "deezer_link": itemLut['2']['url'](top_candidate), 
                     "deezer_cover": getCoverArtUrl(top_candidate['ALB_PICTURE'], 90, 'jpg'), 
                     "type": top_candidate['__TYPE__']

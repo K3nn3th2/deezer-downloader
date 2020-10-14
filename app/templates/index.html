@@ -16,7 +16,7 @@
   <script>
       var show_mpd_features = {{ use_mpd }};
   </script>
-  <script src="{{ static_root }}/js/jquery.ddslick.min.js"></script>
+  <script src="{{ static_root }}/js/jquery.ddslick.js"></script>
   <script src="{{ static_root }}/js/custom.js"></script>
   <script src="{{ static_root }}/js/jquery.jgrowl.min.js"></script>
   <link rel="stylesheet" href="{{ static_root }}/css/font-awesome.min.css">
@@ -63,9 +63,13 @@
         transform: rotate3d(0,1,0,359deg);
       }
     }
-		#pagination_blogs{
-				//visibility: hidden;
+		#pagination_blogs ul{
+				margin-left: auto;
+				margin-right: auto;
+				display: block;
+				width: 50%;
 		}
+
 </style>
 
 </head>
@@ -300,7 +304,9 @@
 								 <img id="loader_blog" class="rotate" src="{{ static_root }}/img/vinyl.png"/>
              </span>
          </div>
-				 <div id="pagination_blogs">
+				 <div id="pagination_blogs_wrap">
+								<div id="pagination_blogs">
+								</div>
 				 </div>
     
          <table id="results_blogs" class="table">
