@@ -449,6 +449,26 @@ def get_song_infos_from_deezer_website(search_type, id):
         songs['albumInfo'] = albumInfo
     return songs
 
+
+def findDeezerReleasesAndPlaylists(searchTerm, maxResults = 1000):
+    items = []
+    res = apiCall('deezer.suggest', {'NB': maxResults, 'QUERY': searchTerm, 'TYPES': {
+        'ALBUM': True, 'PLAYLIST': True # selector can be 'TOP_RESULT', 'TRACK', 'ARTIST', 'ALBUM', 'PLAYLIST', 'RADIO', 'CHANNEL', 'SHOW', 'EPISODE', 'LIVESTREAM', 'USER'
+    }})
+    print('RESULT: ' + str(res))
+    if len(res['ALBUM']) > 0 or len(res['PLAYLIST']) > 0:
+
+        #res_type = res['TOP_RESULT'][0]['__TYPE__']
+        #if (res_type == 'ALBUM' or res_type == 'PLAYLIST'): 
+
+         #   items += res['TOP_RESULT']
+        for typ in ['ALBUM', 'PLAYLIST']:
+            if len(res[typ]) > maxResults-1:
+                res[typ].pop()
+            items += res[typ]
+    
+    return items
+
 def findDeezerReleases(searchTerm, itemType='2', maxResults = 1000):
     items = []
     if itemType == TYPE_ALBUM_TRACK:

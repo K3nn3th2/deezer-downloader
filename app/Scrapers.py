@@ -444,7 +444,7 @@ class Scraper(object):
     def clean_name_for_search(self, name_passed, chunk_amount=2):
         clean_name = name_passed
 		# TODO for each year from 1960 till now -> add to not wanted eg. [1960]
-        not_wanted =  ['[full promo]', ' ft ', ' ep', ' lp', '[promo]', '&', 'riddim driven', ' (reggae)', ' (dancehall)', ' x ', ',']
+        not_wanted =  ['[full promo]', ' ft ', ' ep', ' lp', '[promo]', '&', 'riddim driven', ' (reggae)', ' (dancehall)', ' x ', ',', '!']
         for date in range(1900, datetime.today().year):
             not_wanted.append('[' + str(date) + ']')
             not_wanted.append(str(date))
@@ -471,65 +471,56 @@ class Scraper(object):
 
     def handle_rest_release(self, entry):
         title = html.unescape(entry['title']['rendered'])
-        #name = '-'.join(html.unescape(title).split(u'\u2013')[:-1])
-        #name = html.unescape(entry['title']['rendered']).split(u'\u2013')[0]
-        #name = self.clean_name_for_search(title)
         name = ''
         clean_links = []
         cover = ''
         deezer_link = ''
-        #deezer_results_album = findDeezerReleases(name)
-        deezer_results_album = []
-        #print(deezer_results_album)
+        deezer_results = []
         candidates = []
         
-        print('before for loop.')
         for i in [2,1]:
             print('in for loop: ' + str(i))
             name = self.clean_name_for_search(title, i)
-            deezer_results_album = findDeezerReleases(name)
-            if len(deezer_results_album) != 0:
+            deezer_results = findDeezerReleasesAndPlaylists(name)
+            if len(deezer_results) != 0:
                 break
-        if len(deezer_results_album) == 0:
-            name = name.replace('riddim', '')
-            deezer_results_album = findDeezerReleases(name)
 
-        if len(deezer_results_album) != 0:
-            top_candidates = deezer_results_album[0:15]
+        #deezer_results_playlist = findDeezerReleases(name, itemType = '4')
+        if len(deezer_results) == 0:
+            name = name.replace('riddim', '')
+            deezer_results = findDeezerReleasesAndPlaylists(name)
+
+        if len(deezer_results) != 0:
+            top_candidates = deezer_results[0:15]
             for top_candidate in top_candidates:
         #        pprint('CANDIDATE: ' + str(top_candidate))
-                string = itemLut['2']['tuple'](0, top_candidate)
-                candidates.append({
-                    "deezer_album": top_candidate["ALB_TITLE"], 
-                    "deezer_artist": top_candidate["ART_NAME"], 
-                    "deezer_name": top_candidate["ALB_TITLE"] if top_candidate["__TYPE__"] == "album" else top_candidate["SONG_TITLE"],
-                    "deezer_id": itemLut['2']['url'](top_candidate).split('/')[-1], # Song id if type track?
-                    "deezer_link": itemLut['2']['url'](top_candidate), 
-                    "deezer_cover": getCoverArtUrl(top_candidate['ALB_PICTURE'], 90, 'jpg'), 
-                    "type": top_candidate['__TYPE__']
-                })
-                print('found deezer album: ' + string[1])
-        #else:
-        #    deezer_results_playlist = findDeezerReleases(name, itemType = '4')
-        #    if len(deezer_results_playlist) != 0:
-        #        top_candidate = deezer_results_playlist[0]
-#
-#                string = itemLut['4']['tuple'](0, top_candidate)
-#                deezer_name = string[1]
-#                deezer_link = itemLut['4']['url'](top_candidate)
-#                print('found deezer playlist: ' + name + ': ' + link)
-        #start = time.time()
+                #string = itemLut['2']['tuple'](0, top_candidate)
+                if top_candidate["__TYPE__"] == 'album':
+                    candidates.append({
+                        "deezer_album": top_candidate["ALB_TITLE"], 
+                        "deezer_artist": top_candidate["ART_NAME"], 
+                        "deezer_name": top_candidate["ALB_TITLE"] if top_candidate["__TYPE__"] == "album" else top_candidate["SONG_TITLE"],
+                        "deezer_id": top_candidate['ALB_ID'], # Song id if type track?
+                        #"deezer_link": itemLut['2']['url'](top_candidate), 
+                        "deezer_cover": getCoverArtUrl(top_candidate['ALB_PICTURE'], 90, 'jpg'), 
+                        "type": top_candidate['__TYPE__']
+                    })
+                if top_candidate["__TYPE__"] == 'playlist':
+                    candidates.append({
+                        "deezer_album": top_candidate["TITLE"], 
+                        "deezer_artist": "Various Artists", 
+                        "deezer_name": top_candidate["TITLE"],
+                        "deezer_id": top_candidate['PLAYLIST_ID'], # Song id if type track?
+                        #"deezer_link": itemLut['2']['url'](top_candidate), 
+                        "deezer_cover": getCoverArtUrl(top_candidate['PLAYLIST_PICTURE'], 90, 'jpg'), 
+                        "type": top_candidate['__TYPE__']
+                    })
+                print('found deezer entry: ' + top_candidate['__TYPE__'] + ' ')
+
         xpath_links = '//a/@href'
         xpath_cover = '//img/@src'
         tree = lxml.html.fromstring(str(entry['content']))
         links = tree.xpath(xpath_links)
-        #xpath = time.time()
-        #links_regex = LINK_REGEX.finditer(str(entry))
-        #regex = time.time()
-        #print('xpath took: ' + str(xpath - start))
-        #print('regex took: ' + str(regex - xpath))
-        #for l in links_regex:
-        #    print(str(l))
         try:
             yoast_tree = lxml.html.fromstring(str(entry['yoast_head']))
             xpath_cover = '//meta[@property="og:image"]/@content'
@@ -540,23 +531,18 @@ class Scraper(object):
                 cover = cover[0]
         except Exception as e:
             print('cover acquiration Error: ' + e)
+        
         #clean_links = [self.linkUnlock(link) for link in links if not any([nogo in link for nogo in self.nogoes])e
         #if self.unlock_links:
         #    clean_links = [self.unshortener.unshorten(link) for link in links if not any([nogo in link for nogo in self.nogoes])]
         #else:
+
         clean_links = [link for link in links if not any([nogo in link for nogo in self.nogoes])]
         if len(clean_links) == 0:
             return
         thread_link = entry['link']
             #print( name + ': ' + str(clean_links))
         new_riddim = {"name": title, "deezer_candidates": candidates, "thread_link": thread_link, "query": self.query, "url_cover": cover}
-        #new_riddim = Riddim(name, link, self.query, self, urlCover=cover)
-        #new_riddim = Riddim(name.replace(u'\u2013', ' - ').replace(U'\u2018', "'").replace(u'\u2019', "'").replace(u'\u201C', '"').replace(u'\u201D', '"'), entry['link'], self.query, self, cover)
-        #if len(clean_links) > 0:
-        #    new_riddim.setDownloadUrls(clean_links)
-        #new_riddim.ready = True
-        #self.riddimReady.emit(new_riddim)
-        # emit signal with new_riddim
         return new_riddim
 
     ''' returns releases from a specific page number '''
