@@ -560,7 +560,7 @@ class Scraper(object):
             if self.releases[i] == None:
                 print('-----something went wrong')
             i = i + 1
-            time.sleep(.1)
+            #time.sleep(.)
 
 
     ''' returns releases from a specific page number '''
