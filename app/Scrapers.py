@@ -19,10 +19,12 @@ import faster_than_requests as requests2
 from base64 import *
 from Riddim import *
 #import globalsFile
-from pprint import pprint
 
 from unshortenit import UnshortenIt
 
+from eliot import start_action, to_file, log_call
+import eliot
+to_file(open("linkcheck.log", "w"))
 
 spacer = ' ' * 5
 domains = [ "adf.ly", "j.gs", "q.gs", "ay.gy", "zo.ee", "babblecase.com",
@@ -417,9 +419,9 @@ class Scraper(object):
             print(url_page)
             result = requests.get(url_page, headers=random_headers())
             json_result = json.loads(result.content)
-            if len(json_result) < 5:
-                print(str(type(json_result)))
-                print('result in json: ' + str(json_result))
+            #if len(json_result) < 5:
+            #    print(str(type(json_result)))
+                #print('result in json: ' + str(json_result))
             found_releases_amount = len(json_result)
             print(found_releases_amount)
             #LINK_REGEX = re.compile(r'href="(.*?)"')
@@ -452,7 +454,7 @@ class Scraper(object):
             clean_name = clean_name.lower().replace(nw, ' ')
         #name_split = clean_name.split(u'u\2013')
         name_split = clean_name.split('–')
-        print(name_split)
+        #print(name_split)
         if 'riddim' in name_split[0].strip().lower():
             clean_name = name_split[0].split('riddim')[0] + ' riddim'
         else:
@@ -470,7 +472,12 @@ class Scraper(object):
         return clean_name
 
     def handle_rest_release(self, entry):
-        title = html.unescape(entry['title']['rendered'])
+        try:
+            title = html.unescape(entry['title']['rendered'])
+        except:
+            print('---DIDNT WORK: ' + str(entry))
+            return None
+
         name = ''
         clean_links = []
         cover = ''
@@ -479,7 +486,7 @@ class Scraper(object):
         candidates = []
         
         for i in [2,1]:
-            print('in for loop: ' + str(i))
+            #print('in for loop: ' + str(i))
             name = self.clean_name_for_search(title, i)
             deezer_results = findDeezerReleasesAndPlaylists(name)
             if len(deezer_results) != 0:
@@ -515,7 +522,7 @@ class Scraper(object):
                         "deezer_cover": getCoverArtUrl(top_candidate['PLAYLIST_PICTURE'], 90, 'jpg'), 
                         "type": top_candidate['__TYPE__']
                     })
-                print('found deezer entry: ' + top_candidate['__TYPE__'] + ' ')
+                #print('found deezer entry: ' + top_candidate['__TYPE__'] + ' ')
 
         xpath_links = '//a/@href'
         xpath_cover = '//img/@src'
@@ -525,7 +532,7 @@ class Scraper(object):
             yoast_tree = lxml.html.fromstring(str(entry['yoast_head']))
             xpath_cover = '//meta[@property="og:image"]/@content'
             cover = yoast_tree.xpath(xpath_cover)
-            print('cover: ' + str(cover))
+            #print('cover: ' + str(cover))
             if cover != []:
                 # if we found coverArt URL strings, use the first one
                 cover = cover[0]
@@ -538,22 +545,50 @@ class Scraper(object):
         #else:
 
         clean_links = [link for link in links if not any([nogo in link for nogo in self.nogoes])]
-        if len(clean_links) == 0:
-            return
+    #    if len(clean_links) == 0:
+    #        return
         thread_link = entry['link']
             #print( name + ': ' + str(clean_links))
         new_riddim = {"name": title, "deezer_candidates": candidates, "thread_link": thread_link, "query": self.query, "url_cover": cover}
         return new_riddim
 
+    def processor_thread(self):
+        i = 0
+        while i < len(self.releases):
+            #print("LENGTH: " + str(len(self.releases)) + " i: " + str(i))
+            self.releases[i] = self.handle_rest_release(self.releases[i])
+            if self.releases[i] == None:
+                print('-----something went wrong')
+            i = i + 1
+            time.sleep(.1)
+
+
     ''' returns releases from a specific page number '''
     def get_page_no(self, page_number):
-        if self.pages_processed[page_number] == '':
-            self.pages_processed[page_number] = []
-            for entry in self.pages[page_number]:
-                #print('ENTRY: ' + str(entry))
-                new_release = self.handle_rest_release(entry)
-                self.pages_processed[page_number].append(new_release)
-        return self.pages_processed[page_number]
+        ''' check thread_link property to see if already processed '''
+
+        start = page_number * _per_page
+        end = (page_number + 1) * _per_page
+        if end > len(self.releases):
+            end = len(self.releases) - 1
+        
+        while True:
+            all_processed = True
+            for i in range(start, end):
+                #time.sleep(.5)
+                #print('__checking ' + str(i))
+                try:
+                    if 'thread_link' not in self.releases[i]:
+                        all_processed = False
+                except:
+                    print('__checking failed: ' + str(i))
+                    all_processed = False
+
+            if all_processed:
+                #print('Thread: all processed!')
+                break
+
+        return self.releases[start:end]
 
     ''' downloads all pages of the search result from REST api
         returns the first page, processed.
@@ -576,17 +611,25 @@ class Scraper(object):
         start_page = 0
         found_releases = []
         #found_releases_par = []
-        self.pages = []
-        self.pages_processed = []
+        self.releases = []
         url = self.base_url + rest_string + '&page='
+        first_run = True
         while(found_releases_amount == _per_page):
             start_page += 1
             url_page = url + str(start_page)
             print(url_page)
             result = requests.get(url_page, headers=random_headers())
+            if result.status_code == 400:
+                break
             json_result = json.loads(result.content)
-            self.pages.append(json_result)
-            self.pages_processed.append("")
+            #print(json.dumps(json_result, indent=1, sort_keys=True))
+            self.releases.extend(json_result)
+            if first_run:
+                t = threading.Thread(target=self.processor_thread)
+                t.daemon = True
+                t.start()
+                first_run = False
+
             if len(json_result) < 5:
                 print(str(type(json_result)))
                 print('result in json: ' + str(json_result))
@@ -595,7 +638,6 @@ class Scraper(object):
             found_releases_amount = len(json_result)
             print(found_releases_amount)
             #LINK_REGEX = re.compile(r'href="(.*?)"')
-        #self.pages_processed = [len(self.pages) * '']
         
         '''
         startpar = time.time()
@@ -607,10 +649,11 @@ class Scraper(object):
         print('__HANDLING RELEASES SERIALLY TOOK: ' + str(end - start))
         print('__HANDLING RELEASES IN PARALLEL TOOK: ' + str(endpar - startpar))
         '''
-        print('length pages: ' + str(len(self.pages)))
-        print('length pages_processed: ' + str(len(self.pages_processed)))
         found_releases = self.get_page_no(0)
-        return {'pages': start_page, 'releases': found_releases}
+        page_amount = len(self.releases) / _per_page
+        #if len(self.releases) > _per_page and len(self.releases) % _per_page != 0:
+        #    page_amount = page_amount + 1 
+        return {'pages': page_amount, 'releases': found_releases}
 
 
     def get_releases_from_search(self, query):
@@ -1006,7 +1049,7 @@ class ReggaeFreshScraper(Scraper):
     def __init__(self):
         super(ReggaeFreshScraper, self).__init__()
         self.password = ''
-        self.exclude_string = '&categories_exclude=4'
+        self.exclude_string = '&categories_exclude=4, 1193, 1192'
         self.rest_api_support = True
         self.folderName = 'ReggaeFresh.com'
         self.name = 'ReggaeFresh.com'

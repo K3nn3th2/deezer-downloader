@@ -455,7 +455,7 @@ def findDeezerReleasesAndPlaylists(searchTerm, maxResults = 1000):
     res = apiCall('deezer.suggest', {'NB': maxResults, 'QUERY': searchTerm, 'TYPES': {
         'ALBUM': True, 'PLAYLIST': True # selector can be 'TOP_RESULT', 'TRACK', 'ARTIST', 'ALBUM', 'PLAYLIST', 'RADIO', 'CHANNEL', 'SHOW', 'EPISODE', 'LIVESTREAM', 'USER'
     }})
-    print('RESULT: ' + str(res))
+    #print('RESULT: ' + str(res))
     if len(res['ALBUM']) > 0 or len(res['PLAYLIST']) > 0:
 
         #res_type = res['TOP_RESULT'][0]['__TYPE__']
