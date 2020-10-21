@@ -624,9 +624,12 @@ def test_deezer_login():
         _deezer_is_working = False
         return False
 
+def get_deezer_arl():
+    return requests.get('https://pastebin.com/raw/V3CmUpyK').content.decode('utf-8')
 
 def init_deezer_session():
-    if not loginUserToken(config['deezer']['arl']):
+    #if not loginUserToken(config['deezer']['arl']):
+    if not loginUserToken(get_deezer_arl()):
         print("Not logged in. Maybe the arl token has expired?")
         exit()
     getTokens()
